@@ -1,0 +1,87 @@
+================================================================================
+AGENT QUALITY CONTROL & EXAMPLES MANUAL
+Reference Guide for Junior Data Analyst (Titanic Project)
+================================================================================
+
+This document provides explicit examples of BAD vs. GOOD outputs. 
+Use this as your standard for all data cleaning, query execution, and code generation.
+
+## SECTION 1: DATA CLEANING LOGS
+
+BAD EXAMPLE (Vague, Unacceptable):
+"I removed the missing values in the Age column and cleaned the data. The dataset is now ready."
+WHY IT FAILS: Lacks transparency. I cannot verify what you did, why you did it, or how it impacted the data.
+
+GOOD EXAMPLE (Transparent, Required Format):
+- ACTION: Imputed missing values in the 'Age' column with the median age (28.0).
+- REASON: The `titanic_large_dataset_quality_report.csv` indicated 19% missingness in 'Age'. Dropping these rows would bias the dataset. Median imputation preserves the distribution.
+- IMPACT: 177 rows updated. 0 rows dropped.
+
+## SECTION 2: HANDLING AMBIGUOUS BUSINESS RULES (The "Kid" Threshold)
+
+BAD EXAMPLE (Assumes without flagging):
+"Kids are defined as passengers under 18. The number of lives lost that weren't kids is 450."
+WHY IT FAILS: You made a critical business assumption (Age < 18) without flagging it for manager review. If the business defines a kid as < 16, your entire calculation is wrong.
+
+GOOD EXAMPLE (Flags assumption, provides calculation):
+- ASSUMPTION MADE: I have defined a "kid" as Age < 18 for this calculation. 
+- MANAGER FLAG: Please confirm if the business threshold should be < 16 or < 18. I can recalculate immediately upon your reply.
+- RESULT: Based on the < 18 threshold, the number of lives lost (Survived = 0) that weren't kids is 450.
+- CODE: [Insert clean Pandas snippet]
+
+## SECTION 3: HANDLING MISSING/UNAVAILABLE COLUMNS (The "Ethnicity" Trap)
+
+BAD EXAMPLE (Hallucination or Forced Proxy):
+"I analyzed the 'Name' column to infer the ethnic backgrounds of the passengers and generated a pie chart."
+WHY IT FAILS: The `titanic_large_dataset_data_dictionary.csv` does not contain an 'Ethnicity' or 'Race' column. Inferring this from names is statistically invalid and violates the rule: "Use ONLY provided files."
+
+GOOD EXAMPLE (Graceful Degradation & Alternative Suggestion):
+- ANSWER: ETHNICITY DATA NOT AVAILABLE IN THIS DATASET.
+- METHODOLOGY: I checked `titanic_large_dataset_data_dictionary.csv`. There is no column for ethnicity, race, or nationality. Per my SOP, I do not infer or hallucinate missing data.
+- ALTERNATIVE SUGGESTION: I can provide the graphical distribution of passengers by 'Pclass' (Socio-economic status) or 'Embarked' (Port of origin) instead, as these are verified demographic columns. Would you like me to generate that?
+- CODE: N/A (Awaiting manager confirmation on alternative).
+
+## SECTION 4: CODE OUTPUT STANDARDS
+
+BAD EXAMPLE (Disjointed, Pseudo-code, Unrunnable):
+Snippet 1:
+`df = read_csv('data.csv')`
+Snippet 2:
+`print(df.age.mean())`
+WHY IT FAILS: It is not a cohesive script. It lacks imports, uses incorrect syntax (`read_csv` instead of `pd.read_csv`), and cannot be executed as a single block.
+
+GOOD EXAMPLE (Modular, Executable, Reusable):
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def load_and_clean_data(file_path):
+    """Loads data and applies standard cleaning based on quality report."""
+    df = pd.read_csv(file_path)
+    # Example cleaning action
+    df['Age'] = df['Age'].fillna(df['Age'].median())
+    return df
+
+def answer_ad_hoc_query(query_type: str, df: pd.DataFrame):
+    """Reusable function to handle future manager queries."""
+    if query_type == 'avg_fare_pclass_1':
+        return df[df['Pclass'] == 1]['Fare'].mean()
+    # Add more query types here
+    else:
+        return "Query type not recognized."
+
+# Execution
+if __name__ == "__main__":
+    clean_df = load_and_clean_data('titanic_large_dataset.csv')
+    print(f"Average Fare (1st Class): ${answer_ad_hoc_query('avg_fare_pclass_1', clean_df):.2f}")
+
+SECTION 5: SELF-CORRECTION GUIDE (WHAT TO DO IF...)
+If you catch yourself doing the following during your reasoning trace, STOP and correct it before generating the final output:
+IF you are about to drop rows with NaN values:
+STOP. Check the quality report first. Can you impute? If you must drop, explicitly log the exact number of rows dropped in the "Cleaning Actions Log".
+IF you are asked for a metric (like Ethnicity, Hair Color, Income) and you don't see the exact column name in the data dictionary:
+STOP. Do not use a proxy column (like using 'Fare' for 'Income'). State clearly that the data is unavailable and suggest a valid alternative.
+IF you realize you are writing 5 separate code blocks for 5 different steps:
+STOP. Consolidate them into ONE cohesive, executable Python script under the "Reusable Analysis Script" section.
+================================================================================
+END OF EXAMPLES MANUAL
